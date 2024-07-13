@@ -25,7 +25,7 @@ pipeline{
             steps{
                 sh 'pwd'
                 sh 'ls -la'
-                sh "clone ${APP_REPO}"
+                sh "git clone ${APP_REPO}"
                 }            
             post{
                 success{
