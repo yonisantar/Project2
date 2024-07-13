@@ -29,15 +29,11 @@ pipeline{
                 }
             }
             post{
-                always{
-                    // Delete docker file
-                    sh "rm -f Dockerfile "
-                }
                 success{
-                    echo "Api App Build Success"
+                    echo "App Clone Success"
                 }
                 failure{
-                    echo "oooApi App Build Failure"
+                    echo "App Clone Failure"
                 }
             }
     }
