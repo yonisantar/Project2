@@ -3,7 +3,7 @@ pipeline{
     environment {
         TERRAFORM_FOLDER_NAME= 'Terraform'
         APP_REPO = 'https://github.com/devopsPRO27/devops-personal-project.git'
-        FOLDER_NAME= 'api'
+        FOLDER_NAME= 'devops-personal-project/api'
         CONTAINER_NAME = 'api-app'
         EXTERNAL_APP_PORT = '5000'
         INTERNAL_APP_PORT = '5000'
@@ -28,11 +28,37 @@ pipeline{
                 sh "git clone ${APP_REPO}"
                 }            
             post{
+               always{
+                    // Delete docker file
+                    sh "rm -f Dockerfile "
+                }                
                 success{
                     echo "App Clone Success"
                 }
                 failure{
                     echo "App Clone Failure"
+                }
+            }
+        }
+        stage("build image"){
+            steps{
+                sh 'pwd'
+                sh 'ls -la'
+                dir("${FOLDER_NAME}") {
+                    sh "docker build -t ${IMAGE_NAME}:${TAG} -f ../../Dockerfile ."     
+                    sh "docker rm -f ${CONTAINER_NAME}"                
+                }
+            }
+            post{
+                always{
+                    // Delete docker file
+                    sh "rm -f Dockerfile "
+                }
+                success{
+                    echo "Api App Build Success"
+                }
+                failure{
+                    echo "oooApi App Build Failure"
                 }
             }
         }
