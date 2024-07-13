@@ -46,25 +46,19 @@ pipeline{
         stage("build image"){
             steps{
                 dir("${FOLDER_NAME}") {
-                    sh 'pwd'
-                    sh 'ls -la'     
                     sh "docker build  -f ../../Automation/Dockerfile -t ${IMAGE_NAME}:${TAG} ."     
                 }
             }
             post{
-                always{
-                    // Delete docker file
-                    sh "rm -f Dockerfile "
-                }
                 success{
                     echo "Api App Build Success"
                 }
                 failure{
-                    echo "oooApi App Build Failure"
+                    echo "Api App Build Failure"
                 }
             }
         }
-       stage("Test Image"){            
+        stage("Test Image"){            
             steps{
                     // Delete Container If Exsits
                     sh "docker rm -f ${CONTAINER_NAME}"                
@@ -106,7 +100,7 @@ pipeline{
         always {
             script {
                 if (env.PUBLIC_IP) {
-                    echo "Server PUBLIC_IP is : ${PUBLIC_IP}"
+                    echo "Server PUBLIC_IP is  d: ${PUBLIC_IP}"
                 } else {
                     echo "PUBLIC_IP is empty"
                 }
