@@ -25,8 +25,7 @@ pipeline{
      stages {
        stage("Clone App source code"){
             steps{
-                sh 'pwd'
-                sh 'ls -la'
+                // Delete Repo Directory Before clone
                 sh "rm -rf ${REPO_NAME}"
                 sh "git clone ${APP_REPO}"
                 }            
