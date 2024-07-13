@@ -1,0 +1,33 @@
+pipeline{
+    agent any
+    environment {
+        TERRAFORM_FOLDER_NAME= 'Terraform'
+        SHARED_WORKSPACE = '/var/jenkins_home/workspace/Deploy Enviroment'
+    }    
+     stages {
+        stage("Terraform Destroy") {
+            steps {
+                dir("${SHARED_WORKSPACE}/${TERRAFORM_FOLDER_NAME}") {
+                    echo "======== Destroy Enviroment ========"
+                    sh 'terraform destroy -auto-approve'
+                }
+            }
+            post {
+                success {
+                    echo "Terraform Destroy successfully"
+                }
+                failure {
+                    echo "Terraform Destroy failed"
+                }
+            }
+        }        
+    }
+    post{
+        success{
+            echo "========pipeline executed successfully ========"
+        }
+        failure{
+            echo "========pipeline execution failed========"
+        }
+    }
+}

@@ -1,0 +1,296 @@
+pipeline{
+    agent any
+    environment {
+        TERRAFORM_FOLDER_NAME= 'Terraform'
+        FOLDER_NAME= 'api'
+        CONTAINER_NAME = 'api-app'
+        EXTERNAL_APP_PORT = '5000'
+        INTERNAL_APP_PORT = '5000'
+        TAG = 'v1.${BUILD_NUMBER}'
+        ACCOUNT_NAME= 'yit1977ltld/apiproject'
+        IMAGE_NAME = "${ACCOUNT_NAME}:latest"
+        REGISTRY= 'hub.docker.com'
+        DOCKERHUB_CREDENIALS = credentials('DockerCred')
+        SHARED_WORKSPACE = '/var/jenkins_home/workspace/Deploy Enviroment'
+        CREDENTIALS_ID = 'devopsSSH'
+        USER_NAME = 'ubuntu'
+        JSON_TEST_REQUEST = '{\"ip\": \"8.8.8.8\"}'
+        OK_STATUS_CODE = '200'
+        URL_TRACERT = 'traceroute'
+        URL_VALIDATE_IP = 'validate_ip'
+    }    
+     stages {
+        stage("Terraform Init") {
+            steps {
+                dir("${SHARED_WORKSPACE}/${TERRAFORM_FOLDER_NAME}") {
+                    echo "======== Start Terraform Init ========"
+                    sh 'terraform init'
+                }
+            }
+            post {
+                success {
+                    echo "Terraform init successfully"
+                }
+                failure {
+                    echo "Terraform init failed"
+                }
+            }
+        }
+        stage("Terraform Apply") {
+            steps {
+                dir("${SHARED_WORKSPACE}/${TERRAFORM_FOLDER_NAME}") {
+                    echo "======== Start Terraform Apply to Generate Env ========"
+                    script {
+                        def terraformPlanOutput = sh(script: 'terraform apply -auto-approve', returnStdout: true).trim()
+                        def publicIpMatch = terraformPlanOutput =~ /public_ip\s*=\s*"([0-9\.]+)"/
+                        if (publicIpMatch) {
+                            env.PUBLIC_IP = publicIpMatch[0][1]
+                            echo "Extracted PUBLIC_IP: ${env.PUBLIC_IP}"
+                        } else {
+                            error("Failed to extract public_ip from terraform plan output")
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "Terraform Apply successfully"
+                }
+                failure {
+                    echo "Terraform Apply failed"
+                }
+            }
+            
+        }
+        stage('Check if EC2 is Up and running') {
+            steps {
+                script {
+                    echo "======== Check if EC2 Up and running ========"
+                    retry(50) { // Retry up to 50 times
+                        sshagent(credentials: [CREDENTIALS_ID]) {
+                            sh """
+                                ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${USER_NAME}@${PUBLIC_IP} <<EOF
+                                echo "EC2 instance is up and running."
+                                exit
+                                EOF
+                            """
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "EC2 instance Up and running"
+                }
+                failure {
+                    echo "Failed to connect to EC2 instance"
+                }
+            }
+        }
+        stage('Update System') {
+            steps {
+                script {
+                    sshagent(credentials: [CREDENTIALS_ID]) {
+                        echo "======== Start Update System ========"
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${USER_NAME}@${PUBLIC_IP} <<EOF
+                            echo "Connected successfully"
+                            pwd
+                            sudo apt-get update && sudo apt-get upgrade -y
+                            exit
+                            EOF
+                        """
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "System updated successfully"
+                }
+                failure {
+                    echo "System update failed"
+                }
+            }
+        }      
+        stage('Install Docker if not installed') {
+            steps {
+                sshagent(credentials: [CREDENTIALS_ID]) {
+                    echo "======== Install Docker If Needed ========"
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${USER_NAME}@${PUBLIC_IP} <<EOF
+                        pwd
+                        if ! command -v docker &> /dev/null; then
+                            sudo snap install docker
+                        else
+                            echo "Docker is already installed."
+                        fi
+                        exit
+                        EOF
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "Install Docker successfully"
+                }
+                failure {
+                    echo "Install Docker failed"
+                }
+            }
+        }
+        stage('Check if Docker is running') {
+            steps {
+                sshagent(credentials: [CREDENTIALS_ID]) {
+                    echo "======== Check if Docker is Running ========"
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${USER_NAME}@${PUBLIC_IP} <<EOF
+                        if sudo systemctl is-active --quiet docker; then
+                            echo "Docker service is running."
+                        else
+                            echo "Docker service is not running. Starting Docker service..."
+                            sudo systemctl start docker
+                            if sudo systemctl is-active --quiet docker; then
+                                echo "Docker service started successfully."
+                            else
+                                echo "Failed to start Docker service."
+                            fi
+                        fi
+
+                        # Verify Docker is working
+                        if docker info > /dev/null 2>&1; then
+                            echo "Docker is running correctly."
+                        else
+                            echo "Docker is not running correctly."
+                        fi
+                        exit
+                        EOF
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "Docker is running correctly"
+                }
+                failure {
+                    echo "Docker is not running correctly"
+                }
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sshagent(credentials: [CREDENTIALS_ID]) {
+                    echo "======== Install Dependencies ========"
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${USER_NAME}@${PUBLIC_IP} 'sudo apt-get install -qqy apt-transport-https ca-certificates curl gnupg2 software-properties-common wget sudo git'
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "Install Dependencies successfully"
+                }
+                failure {
+                    echo "Install Dependencies failed"
+                }
+            }             
+        }
+        stage('Remove Docker Container if exists') {
+            steps {
+                sshagent(credentials: [CREDENTIALS_ID]) {
+                    echo "======== Remove old Container if exists ========"
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${USER_NAME}@${PUBLIC_IP} '
+                        if sudo docker ps -a --format "{{.Names}}" | grep -Eq "^${CONTAINER_NAME}\$"; then
+                            sudo docker rm -f ${CONTAINER_NAME}
+                        else
+                            echo "Container ${CONTAINER_NAME} does not exist."
+                        fi'
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "Remove Docker Container if exists successfully"
+                }
+                failure {
+                    echo "Remove Docker Container if exists failed"
+                }
+            }  
+        }
+        stage('Run Docker Container') {
+            steps {
+                sshagent(credentials: [CREDENTIALS_ID]) {
+                    echo "======== Update App Container with the new Version ========"
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${USER_NAME}@${PUBLIC_IP} 'sudo docker run -d --name ${CONTAINER_NAME} -p ${EXTERNAL_APP_PORT}:${INTERNAL_APP_PORT} ${IMAGE_NAME}'
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "Run New Docker Container successfully"
+                }
+                failure {
+                    echo "Run New Docker Container failed"
+                }
+            }              
+        }
+        stage('Check container by running two curl requests') {
+            parallel {
+                stage('Check tracert request') {
+                    steps {
+                        echo "======== Check Container by running traceroute request ========"
+                        script {
+                            def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" -X POST http://${PUBLIC_IP}:${EXTERNAL_APP_PORT}/${URL_TRACERT} -H \"Content-Type: application/json\" -d '${JSON_TEST_REQUEST}'", returnStdout: true).trim()
+                            
+                            if (response == "${OK_STATUS_CODE}") {
+                                echo "TraceRt is working correctly."
+                            } else {
+                                echo "TraceRt is not working correctly. HTTP status code: ${response}"
+                            }
+                        }
+                    }
+                }
+                stage('Check ValidateIp request') {
+                    steps {
+                        echo "======== Check Container by running ValidateIp request ========"
+                        script {
+                            def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" -X POST http://${PUBLIC_IP}:${EXTERNAL_APP_PORT}/${URL_VALIDATE_IP} -H \"Content-Type: application/json\" -d '${JSON_TEST_REQUEST}'", returnStdout: true).trim()
+                            
+                            if (response == "${OK_STATUS_CODE}") {
+                                echo "ValidateIp is working correctly."
+                            } else {
+                                echo "ValidateIp  is not working correctly. HTTP status code: ${response}"
+                            }
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "Container is working correctly"
+                }
+                failure {
+                    echo "Container is not working correctly"
+                }
+            }
+        }
+    }
+    post{
+         always {
+            script {
+                if (env.PUBLIC_IP) {
+                    echo "Server PUBLIC_IP is : ${PUBLIC_IP}"
+                } else {
+                    echo "PUBLIC_IP is empty"
+                }
+            }
+        }
+        success{
+            echo "========pipeline executed successfully ========"
+        }
+        failure{
+            echo "========pipeline execution failed========"
+        }
+    }
+}
