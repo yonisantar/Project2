@@ -50,7 +50,7 @@ pipeline{
                     sh 'ls -la'     
                     sh 'cp ../../Automation/Dockerfile .' 
                     sh 'ls -la'     
-                    sh "docker build -t ${IMAGE_NAME}:latest ."     
+                    sh "docker build -t ${IMAGE_NAME} ."     
                     sh "docker rm -f ${CONTAINER_NAME}"                
                 }
             }
