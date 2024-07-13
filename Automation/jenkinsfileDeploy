@@ -83,16 +83,26 @@ pipeline{
         
         }
 
-         stage("push image"){
+        stage("push image"){
             steps{
                 sh "docker tag ${IMAGE_NAME}:${TAG} ${ACCOUNT_NAME}:${TAG}"
                 sh "docker tag ${IMAGE_NAME}:${TAG} ${ACCOUNT_NAME}:latest" // Tag the image as latest
                 sh "docker images"
                 sh "docker push ${ACCOUNT_NAME}:${TAG}" 
                 sh "docker push ${ACCOUNT_NAME}:latest" // Push the latest tag
+                echo "======== Image Pushed to DuckerHub successfully ========"
             }
         
         }
+
+        stage("Delete Image from local Repo"){
+            steps{
+                sh "docker rmi -f ${IMAGE_NAME}:${TAG} ${ACCOUNT_NAME}:${TAG}"
+                sh "docker rmi -f ${IMAGE_NAME}:${TAG} ${ACCOUNT_NAME}:latest" // Tag the image as latest
+                echo "======== Delete Images from local Repo successfully ========"
+            }
+        
+        }        
 
     }
     post{
