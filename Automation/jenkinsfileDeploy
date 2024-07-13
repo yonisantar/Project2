@@ -48,7 +48,8 @@ pipeline{
                 dir("${FOLDER_NAME}") {
                     sh 'pwd'
                     sh 'ls -la'     
-                    sh 'cp ../../Automation/Dockerfile .'               
+                    sh 'cp ../../Automation/Dockerfile .' 
+                    sh 'ls -la'     
                     sh "docker build -f ../../Automation/Dockerfile -t ${IMAGE_NAME}:${TAG} ."     
                     sh "docker rm -f ${CONTAINER_NAME}"                
                 }
