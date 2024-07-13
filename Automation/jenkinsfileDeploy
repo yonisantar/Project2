@@ -2,8 +2,10 @@ pipeline{
     agent any
     environment {
         TERRAFORM_FOLDER_NAME= 'Terraform'
-        APP_REPO = 'https://github.com/devopsPRO27/devops-personal-project.git'
-        FOLDER_NAME= 'devops-personal-project/api'
+        REPO_NAME = 'devops-personal-project'
+        APP_REPO = "https://github.com/devopsPRO27/${REPO_NAME}.git"        
+        APP_DIRECTORY = "api"
+        FOLDER_NAME= ${REPO_NAME}/${APP_DIRECTORY}
         CONTAINER_NAME = 'api-app'
         EXTERNAL_APP_PORT = '5000'
         INTERNAL_APP_PORT = '5000'
@@ -25,6 +27,7 @@ pipeline{
             steps{
                 sh 'pwd'
                 sh 'ls -la'
+                sh "rm -rf ${REPO_NAME}"
                 sh "git clone ${APP_REPO}"
                 }            
             post{
