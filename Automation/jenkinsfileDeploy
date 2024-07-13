@@ -35,22 +35,23 @@ pipeline{
                     echo "App Clone Failure"
                 }
             }
-    }
-    post{
-         always {
-            script {
-                if (env.PUBLIC_IP) {
-                    echo "Server PUBLIC_IP is : ${PUBLIC_IP}"
-                } else {
-                    echo "PUBLIC_IP is empty"
+        }
+        post{
+            always {
+                script {
+                    if (env.PUBLIC_IP) {
+                        echo "Server PUBLIC_IP is : ${PUBLIC_IP}"
+                    } else {
+                        echo "PUBLIC_IP is empty"
+                    }
                 }
             }
-        }
-        success{
-            echo "========pipeline executed successfully ========"
-        }
-        failure{
-            echo "========pipeline execution failed========"
+            success{
+                echo "========pipeline executed successfully ========"
+            }
+            failure{
+                echo "========pipeline execution failed========"
+            }
         }
     }
 }
