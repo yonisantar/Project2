@@ -26,8 +26,7 @@ pipeline{
                 sh 'pwd'
                 sh 'ls -la'
                 sh "clone ${APP_REPO}"
-                }
-            }
+                }            
             post{
                 success{
                     echo "App Clone Success"
