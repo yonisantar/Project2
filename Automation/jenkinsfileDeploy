@@ -63,7 +63,9 @@ pipeline{
                     sh "docker rm -f ${CONTAINER_NAME}"                
                     // Create New Container
                     sh "docker run -d --network=host --name ${CONTAINER_NAME} -p ${EXTERNAL_APP_PORT}:${INTERNAL_APP_PORT} ${IMAGE_NAME}:${TAG}"   
-                    sh "sleep 2 && timeout 5 ping localhost -c 4 -p ${EXTERNAL_APP_PORT}"                 
+                    sh "sleep 2 && timeout 5 ping localhost -c 4 -p ${EXTERNAL_APP_PORT}"    
+                    // Delete Container When finish Testing
+                    sh "docker rm -f ${CONTAINER_NAME}"                             
             }
             post{
                 success{
