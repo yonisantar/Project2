@@ -49,7 +49,6 @@ pipeline{
                     sh 'pwd'
                     sh 'ls -la'     
                     sh "docker build  -f ../../Automation/Dockerfile -t ${IMAGE_NAME} ."     
-                    sh "docker rm -f ${CONTAINER_NAME}"                
                 }
             }
             post{
@@ -65,6 +64,43 @@ pipeline{
                 }
             }
         }
+       stage("Test Image"){            
+            steps{
+                    // Delete Container If Exsits
+                    sh "docker rm -f ${CONTAINER_NAME}"                
+                    // Create New Container
+                    sh "docker run -d --network=host --name ${CONTAINER_NAME} -p ${EXTERNAL_APP_PORT}:${INTERNAL_APP_PORT} ${IMAGE_NAME}:${TAG}"   
+                    sh "sleep 2 && timeout 5 ping localhost -c 4 -p ${EXTERNAL_APP_PORT}"                 
+            }
+            post{
+                success{
+                    echo "Container is answering - OK"
+                }
+                failure{
+                    echo "Container is not answering - Failure"
+                }
+            }                
+        }
+
+        stage("Login to DockerHub"){
+            steps{
+                sh 'echo ${DOCKERHUB_CREDENIALS_USR}'
+                sh "echo ${DOCKERHUB_CREDENIALS_PSW} | docker login -u ${DOCKERHUB_CREDENIALS_USR} --password-stdin "
+            }
+        
+        }
+
+         stage("push image"){
+            steps{
+                sh "docker tag ${IMAGE_NAME}:${TAG} ${ACCOUNT_NAME}:${TAG}"
+                sh "docker tag ${IMAGE_NAME}:${TAG} ${ACCOUNT_NAME}:latest" // Tag the image as latest
+                sh "docker images"
+                sh "docker push ${ACCOUNT_NAME}:${TAG}" 
+                sh "docker push ${ACCOUNT_NAME}:latest" // Push the latest tag
+            }
+        
+        }
+
     }
     post{
         always {
