@@ -45,9 +45,9 @@ pipeline{
         }
         stage("build image"){
             steps{
-                sh 'pwd'
-                sh 'ls -la'
                 dir("${FOLDER_NAME}") {
+                    sh 'pwd'
+                    sh 'ls -la'                    
                     sh "docker build -t ${IMAGE_NAME}:${TAG} -f ../../Dockerfile ."     
                     sh "docker rm -f ${CONTAINER_NAME}"                
                 }
