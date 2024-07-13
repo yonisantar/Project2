@@ -14,7 +14,7 @@ pipeline{
         IMAGE_NAME = "${ACCOUNT_NAME}"
         REGISTRY= 'hub.docker.com'
         DOCKERHUB_CREDENIALS = credentials('DockerCred')
-        SHARED_WORKSPACE = '/var/jenkins_home/workspace/Deploy Enviroment'
+        SHARED_WORKSPACE = '/var/jenkins_home/workspace/Full Project Deploy With App Clone'
         CREDENTIALS_ID = 'devopsSSH'
         USER_NAME = 'ubuntu'
         JSON_TEST_REQUEST = '{\"ip\": \"8.8.8.8\"}'
