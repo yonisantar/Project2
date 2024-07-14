@@ -1,96 +1,24 @@
-# Project Overview
+# Automation Project
 
-This repository contains three sub-projects: API, Automation, and Terraform. Each sub-project plays a crucial role in the overall functionality and deployment of our application.
+This project automates the process of building, testing, and deploying a Flask application using Docker and Terraform.
 
-## API
+## Overview
 
-The API sub-project is the main application, running a Python Flask program that exposes two web services.
+The automation workflow includes the following steps:
 
-### Endpoints
+1. Clone the application code.
+2. Build a Docker image of the Flask application.
+3. Test the Docker image by creating a local container.
+4. Push the Docker image to Docker Hub if the test is successful.
+5. Use Terraform to create AWS resources (EC2 instance and security group).
+6. Install Docker on the EC2 instance and deploy the Docker image.
+7. Run the Docker container with the application on the EC2 instance.
+8. Test the application by calling two REST APIs using curl commands.
 
-1. **Validate IP**
+## Prerequisites
 
-   - **Route:** `/validate_ip`
-   - **Method:** `POST`
-   - **Description:** Validates if the provided IP address is valid.
-   - **Request Body:**
-     ```json
-     {
-       "ip": "string"
-     }
-     ```
-   - **Responses:**
-     - `200 OK`: IP address is valid.
-       ```json
-       {
-         "status": "valid"
-       }
-       ```
-     - `400 Bad Request`: IP address is invalid.
-       ```json
-       {
-         "status": "invalid"
-       }
-       ```
-
-2. **Traceroute**
-
-   - **Route:** `/traceroute`
-   - **Method:** `POST`
-   - **Description:** Performs a traceroute to the provided IP address.
-   - **Request Body:**
-     ```json
-     {
-       "ip": "string"
-     }
-     ```
-   - **Responses:**
-     - `200 OK`: Traceroute result.
-       ```json
-       {
-         "traceroute": "string"
-       }
-       ```
-     - `400 Bad Request`: Invalid IP address.
-       ```json
-       {
-         "error": "Invalid IP address"
-       }
-       ```
-
-## Automation
-
-The Automation sub-project contains Jenkins scripts used for building, deploying, and destroying the application.
-
-### Jenkins Scripts
-
-1. **jenkinsfileBuild**
-   - **Purpose:** Builds the application locally, tests the image by creating a container and pinging it. If the image is valid, it creates a new image and deploys it with the tag `latest` to Docker Hub Image repo.
-
-2. **jenkinsfileDeploy**
-   - **Purpose:** Used by the Jenkins pipeline to deploy to AWS. It uses Terraform to create a Security Group and EC2 instance, installs Docker, deploys the image, and runs the container. Finally, it uses two curl commands to check the two endpoints of the app.
-
-3. **jenkinsfileTerraformDestroy**
-   - **Purpose:** Used by the Jenkins pipeline to destroy and delete all resources in AWS.
-
-## Terraform
-
-The Terraform sub-project contains all the files used to create the necessary resources in AWS, such as Security Groups and EC2 instances.
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.x
-- Flask
+- Git
 - Docker
-- Jenkins
 - Terraform
 - AWS CLI
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo.git
-   cd your-repo
+- Jenkins (for automation)
